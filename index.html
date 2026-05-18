@@ -18,9 +18,8 @@
         .animate-shake { animation: shake 0.2s ease-in-out infinite; }
         @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         .animate-bounce-slow { animation: bounce-slow 1s ease-in-out infinite; }
-        .pixelated { image-rendering: pixelated; }
         
-        /* 캔버스와 동일한 배치를 보장하는 16:9 절대 비율 컨테이너 */
+        /* 16:9 절대 비율 컨테이너 및 배경 설정 */
         .game-board {
             position: relative;
             width: 100%;
@@ -29,10 +28,8 @@
             aspect-ratio: 16 / 9;
             overflow: hidden;
             border-radius: 0.5rem;
-            background-color: #f8fafc;
+            background-color: #FFFFFF;
         }
-
-        /* 배경 이미지를 16:9 공간에 가득 채우고 스케일/위치를 고정 */
         .game-bg {
             position: absolute;
             inset: 0;
@@ -41,35 +38,30 @@
             object-fit: cover;
             pointer-events: none;
         }
-        .bg-skewer { transform: scale(1.15) translateY(-5%); }
+        .bg-skewer { transform: scale(0.9) translateY(6%); }
         .bg-shabu { transform: scale(1.05) translateY(5%); }
 
-        /* 화면 크기에 맞춰 글자 크기 유동적 조절 */
+        /* 반응형 글자 크기 */
         .text-slot { font-size: clamp(0.7rem, 1.6vw, 1.2rem); }
         .text-label { font-size: clamp(0.6rem, 1.2vw, 1rem); }
         .text-title { font-size: clamp(1rem, 2vw, 1.5rem); }
         .responsive-text-base { font-size: clamp(0.85rem, 1.5vw, 1.1rem); }
-        .responsive-text-sm { font-size: clamp(0.7rem, 1.2vw, 1rem); }
 
-        /* 공통 버튼 디자인 */
         .slot-btn {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            border-width: 2px;
             transition: all 0.2s;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-
-        /* 빈 칸 박스 크기 및 가동 범위 제한 (높이를 25%로 키움) */
-        .skewer-slot { width: 13%; height: 25%; max-width: 115px; max-height: 100px; }
+        .skewer-slot { width: 15%; height: 100%; max-width: 120px; }
     </style>
 </head>
 <body>
     <div id="root">
-        <div style="display:flex; justify-content:center; align-items:center; height:100vh; font-family:sans-serif; font-size:1.5rem; font-weight:bold;">
+        <div class="flex justify-center items-center h-screen text-2xl font-bold text-center">
             👨‍🍳 요리 재료를 준비 중입니다... 잠시만 기다려주세요!
         </div>
     </div>
@@ -77,7 +69,6 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- 완벽히 동기화된 전체 문제 데이터베이스 (16종) ---
         const QUIZ_DATA = {
           enumeration: [
             { id: 'e1', topic: '우리나라의 전통 놀이', slots: [{ id: 's1', answer: '제기차기' }, { id: 's2', answer: '윷놀이' }, { id: 's3', answer: '투호' }, { id: 's4', answer: '널뛰기' }], distractors: ['스마트폰 게임', '체스', '축구'] },
@@ -87,17 +78,37 @@
             { id: 'e5', topic: '겨울에 볼 수 있는 것', slots: [{ id: 's1', answer: '눈사람' }, { id: 's2', answer: '군고구마' }, { id: 's3', answer: '목도리' }, { id: 's4', answer: '썰매' }], distractors: ['반팔 티셔츠', '수박', '선풍기'] },
             { id: 'e6', topic: '현악기의 종류', slots: [{ id: 's1', answer: '바이올린' }, { id: 's2', answer: '첼로' }, { id: 's3', answer: '가야금' }, { id: 's4', answer: '거문고' }], distractors: ['트럼펫', '드럼', '피리'] },
             { id: 'e7', topic: '우리나라의 광역시', slots: [{ id: 's1', answer: '부산' }, { id: 's2', answer: '대구' }, { id: 's3', answer: '인천' }, { id: 's4', answer: '광주' }], distractors: ['서울', '제주', '도쿄', '대전'] },
-            { id: 'e8', topic: '에너지 절약 방법', slots: [{ id: 's1', answer: '전등 끄기' }, { id: 's2', answer: '코드 뽑기' }, { id: 's3', answer: '계단 이용' }, { id: 's4', answer: '물 아껴 쓰기' }], distractors: ['에어컨 종일 켜기', '빨래 조금씩 자주 하기'] }
+            { id: 'e8', topic: '포유류 동물의 종류', slots: [{ id: 's1', answer: '사자' }, { id: 's2', answer: '호랑이' }, { id: 's3', answer: '곰' }, { id: 's4', answer: '토끼' }], distractors: ['독수리', '상어', '거북이'] },
+            { id: 'e9', topic: '삼국시대에 있었던 나라', slots: [{ id: 's1', answer: '고구려' }, { id: 's2', answer: '백제' }, { id: 's3', answer: '신라' }, { id: 's4', answer: '가야' }], distractors: ['조선', '고려', '발해'] },
+            { id: 'e10', topic: '봄에 피는 꽃', slots: [{ id: 's1', answer: '개나리' }, { id: 's2', answer: '진달래' }, { id: 's3', answer: '벚꽃' }, { id: 's4', answer: '목련' }], distractors: ['해바라기', '코스모스', '국화'] },
+            { id: 'e11', topic: '우리나라의 전통 음식', slots: [{ id: 's1', answer: '김치' }, { id: 's2', answer: '비빔밥' }, { id: 's3', answer: '불고기' }, { id: 's4', answer: '떡국' }], distractors: ['스파게티', '피자', '햄버거'] },
+            { id: 'e12', topic: '생활 속 가전제품', slots: [{ id: 's1', answer: '냉장고' }, { id: 's2', answer: '세탁기' }, { id: 's3', answer: '텔레비전' }, { id: 's4', answer: '에어컨' }], distractors: ['책상', '나무 의자', '거울'] },
+            { id: 'e13', topic: '여름에 사용하는 물건', slots: [{ id: 's1', answer: '선풍기' }, { id: 's2', answer: '부채' }, { id: 's3', answer: '물놀이 튜브' }, { id: 's4', answer: '양산' }], distractors: ['털장갑', '전기장판', '눈썰매'] },
+            { id: 'e14', topic: '사물놀이에 쓰는 전통 악기', slots: [{ id: 's1', answer: '꽹과리' }, { id: 's2', answer: '징' }, { id: 's3', answer: '장구' }, { id: 's4', answer: '북' }], distractors: ['피리', '가야금', '기타'] },
+            { id: 'e15', topic: '사람의 감정을 나타내는 말', slots: [{ id: 's1', answer: '기쁨' }, { id: 's2', answer: '슬픔' }, { id: 's3', answer: '화남' }, { id: 's4', answer: '즐거움' }], distractors: ['달리기', '공부', '음식'] },
+            { id: 'e16', topic: '컴퓨터의 입력 장치', slots: [{ id: 's1', answer: '키보드' }, { id: 's2', answer: '마우스' }, { id: 's3', answer: '마이크' }, { id: 's4', answer: '스캐너' }], distractors: ['모니터', '프린터', '스피커'] },
+            { id: 'e17', topic: '수영의 네 가지 영법', slots: [{ id: 's1', answer: '자유형' }, { id: 's2', answer: '평영' }, { id: 's3', answer: '배영' }, { id: 's4', answer: '접영' }], distractors: ['다이빙', '서핑', '싱크로나이즈드'] },
+            { id: 'e18', topic: '식물이 자라는 데 필요한 요소', slots: [{ id: 's1', answer: '햇빛' }, { id: 's2', answer: '물' }, { id: 's3', answer: '공기' }, { id: 's4', answer: '알맞은 온도' }], distractors: ['설탕', '돌멩이', '플라스틱'] }
           ],
           comparison: [
             { id: 'c1', targets: ['버스', '지하철'], slots: [{ id: 'common1', answer: '대중교통 수단이다' }, { id: 'common2', answer: '많은 사람이 이용한다' }, { id: 'diffA', answer: '도로 위를 달린다' }, { id: 'diffB', answer: '지하 선로를 이용한다' }], distractors: ['하늘을 날아다닌다', '개인이 소유하는 자가용', '우주로 나가는 발사체'] },
             { id: 'c2', targets: ['도서관', '서점'], slots: [{ id: 'common1', answer: '책이 아주 많다' }, { id: 'common2', answer: '조용히 해야 하는 장소이다' }, { id: 'diffA', answer: '무료로 책을 빌려준다' }, { id: 'diffB', answer: '돈을 내고 책을 산다' }], distractors: ['음식을 요리해서 판다', '운동경기를 관람하는 곳', '영화를 상영하는 극장'] },
-            { id: 'c3', targets: ['축구', '농구'], slots: [{ id: 'common1', answer: '공을 사용하는 운동이다' }, { id: 'common2', answer: '팀을 나누어 경기를 구한다' }, { id: 'diffA', answer: '주로 발로 공을 찬다' }, { id: 'diffB', answer: '주로 손으로 공을 던진다' }], distractors: ['물속에서 하는 운동이다', '혼자서만 즐기는 스포츠', '얼음 위에서 타는 스케이트'] },
+            { id: 'c3', targets: ['축구', '농구'], slots: [{ id: 'common1', answer: '공을 사용하는 운동이다' }, { id: 'common2', answer: '팀을 나누어 경기를 한다' }, { id: 'diffA', answer: '주로 발로 공을 찬다' }, { id: 'diffB', answer: '주로 손으로 공을 던진다' }], distractors: ['물속에서 하는 운동이다', '혼자서만 즐기는 스포츠', '얼음 위에서 타는 스케이트'] },
             { id: 'c4', targets: ['지구', '달'], slots: [{ id: 'common1', answer: '우주에 있는 천체이다' }, { id: 'common2', answer: '둥근 모양을 하고 있다' }, { id: 'diffA', answer: '생명체가 살고 있다' }, { id: 'diffB', answer: '지구의 주위를 도는 위성이다' }], distractors: ['사람이 만든 인공물이다', '눈이 부시게 빛나는 항성', '사각형의 평평한 모양'] },
             { id: 'c5', targets: ['연필', '샤프'], slots: [{ id: 'common1', answer: '글씨를 쓰는 도구이다' }, { id: 'common2', answer: '공부할 때 주로 사용한다' }, { id: 'diffA', answer: '나무로 만들어 깎아 쓴다' }, { id: 'diffB', answer: '버튼을 눌러 심을 낸다' }], distractors: ['배고플 때 먹는 음식이다', '발에 신는 신발의 종류', '몸을 씻는 세면도구'] },
             { id: 'c6', targets: ['종이책', '전자책'], slots: [{ id: 'common1', answer: '정보를 전달하는 매체이다' }, { id: 'common2', answer: '글과 그림으로 구성되어 있다' }, { id: 'diffA', answer: '종이로 만들어 넘겨 읽는다' }, { id: 'diffB', answer: '전자기기 화면을 통해 읽는다' }], distractors: ['배터리가 없어도 둘 다 작동한다', '음악을 연주하는 악기이다', '옷을 만드는 재료이다'] },
             { id: 'c7', targets: ['육지 생물', '바다 생물'], slots: [{ id: 'common1', answer: '숨을 쉬며 살아간다' }, { id: 'common2', answer: '먹이를 먹고 에너지를 얻는다' }, { id: 'diffA', answer: '땅 위에서 다리로 걷거나 뛴다' }, { id: 'diffB', answer: '물속에서 헤엄치며 생활한다' }], distractors: ['모두 지느러미를 이용해 이동한다', '광합성을 해서 영양분을 만든다', '금속으로 몸이 이루어져 있다'] },
-            { id: 'c8', targets: ['안경', '선글라스'], slots: [{ id: 'common1', answer: '눈(얼굴)에 착용하는 도구이다' }, { id: 'common2', answer: '눈을 보호하거나 시력을 돕는다' }, { id: 'diffA', answer: '주로 시력을 교정하기 위해 쓴다' }, { id: 'diffB', answer: '햇빛(자외선)을 차단하기 위해 쓴다' }], distractors: ['발에 신어서 걸어 다닐 때 쓴다', '머리에 쓰고 자는 모자이다', '입술에 바르는 화장품이다'] }
+            { id: 'c8', targets: ['안경', '선글라스'], slots: [{ id: 'common1', answer: '눈(얼굴)에 착용하는 도구이다' }, { id: 'common2', answer: '눈을 보호하거나 시력을 돕는다' }, { id: 'diffA', answer: '주로 시력을 교정하기 위해 쓴다' }, { id: 'diffB', answer: '햇빛(자외선)을 차단하기 위해 쓴다' }], distractors: ['발에 신어서 걸어 다닐 때 쓴다', '머리에 쓰고 자는 모자이다', '입술에 바르는 화장품이다'] },
+            { id: 'c9', targets: ['사과', '수박'], slots: [{ id: 'common1', answer: '식물의 달콤한 열매이다' }, { id: 'common2', answer: '비타민과 수분이 풍부하다' }, { id: 'diffA', answer: '높은 나무에서 열린다' }, { id: 'diffB', answer: '땅 위 덩굴에서 열린다' }], distractors: ['동물이 낳은 알이다', '바다 밑에서 자란다', '매운맛이 아주 강하다'] },
+            { id: 'c10', targets: ['호랑이', '매'], slots: [{ id: 'common1', answer: '다른 동물을 먹는 육식 동물이다' }, { id: 'common2', answer: '뼈가 있는 척추동물이다' }, { id: 'diffA', answer: '새끼를 낳고 젖을 먹인다' }, { id: 'diffB', answer: '알을 낳고 날개로 날아다닌다' }], distractors: ['몸에 아가미가 있다', '광합성으로 영양분을 만든다', '다리가 6개인 곤충이다'] },
+            { id: 'c11', targets: ['스마트폰', '컴퓨터'], slots: [{ id: 'common1', answer: '인터넷을 사용할 수 있다' }, { id: 'common2', answer: '정보를 검색하고 처리한다' }, { id: 'diffA', answer: '한 손으로 들고 다니며 쓴다' }, { id: 'diffB', answer: '책상 위에 두고 큰 화면으로 쓴다' }], distractors: ['전기가 없어도 작동한다', '사람이 먹는 음식이다', '나무를 깎아 만든 도구이다'] },
+            { id: 'c12', targets: ['자전거', '자동차'], slots: [{ id: 'common1', answer: '바퀴로 이동하는 교통수단이다' }, { id: 'common2', answer: '사람이나 물건을 실어 나른다' }, { id: 'diffA', answer: '사람이 직접 페달을 밟아 간다' }, { id: 'diffB', answer: '엔진과 연료의 힘으로 간다' }], distractors: ['하늘 높이 날아다닌다', '철로 위로만 다녀야 한다', '바다 밑을 다니는 잠수함이다'] },
+            { id: 'c13', targets: ['우산', '우비'], slots: [{ id: 'common1', answer: '비가 올 때 몸이 젖지 않게 한다' }, { id: 'common2', answer: '물이 스며들지 않는 재질이다' }, { id: 'diffA', answer: '손으로 대를 잡고 넓게 펼친다' }, { id: 'diffB', answer: '옷처럼 몸에 직접 입는다' }], distractors: ['추울 때 손에 끼는 장갑이다', '발을 보호하는 장화이다', '머리에 쓰고 자는 모자이다'] },
+            { id: 'c14', targets: ['일기', '독서감상문'], slots: [{ id: 'common1', answer: '자신의 생각과 느낌을 쓴다' }, { id: 'common2', answer: '날짜나 제목을 기록한다' }, { id: 'diffA', answer: '그날 하루 겪은 일을 주로 쓴다' }, { id: 'diffB', answer: '책을 읽고 난 후의 느낌을 쓴다' }], distractors: ['실제 사실만 적는 뉴스 기사이다', '물건을 팔기 위한 광고문이다', '법을 정해 놓은 국가 문서이다'] },
+            { id: 'c15', targets: ['선풍기', '에어컨'], slots: [{ id: 'common1', answer: '여름에 실내를 시원하게 한다' }, { id: 'common2', answer: '전기를 사용하는 가전제품이다' }, { id: 'diffA', answer: '날개를 회전시켜 바람을 만든다' }, { id: 'diffB', answer: '냉매를 이용해 온도를 낮춘다' }], distractors: ['겨울에 방을 데우는 보일러이다', '음식을 데우는 전자레인지이다', '옷을 말리는 빨래건조기이다'] },
+            { id: 'c16', targets: ['시', '이야기'], slots: [{ id: 'common1', answer: '문학 작품의 한 종류이다' }, { id: 'common2', answer: '지은이의 생각이 담겨 있다' }, { id: 'diffA', answer: '운율이 느껴지는 짧은 말로 쓴다' }, { id: 'diffB', answer: '인물과 사건을 줄글로 쓴다' }], distractors: ['사실만 기록한 뉴스 기사문이다', '실험을 적은 과학 보고서이다', '지도와 통계로 된 백과사전이다'] },
+            { id: 'c17', targets: ['금속', '고무'], slots: [{ id: 'common1', answer: '물건을 만드는 데 쓰이는 물질이다' }, { id: 'common2', answer: '우리 주변에서 쉽게 찾을 수 있다' }, { id: 'diffA', answer: '단단하고 전기가 잘 통한다' }, { id: 'diffB', answer: '잡아당기면 늘어나는 탄성이 있다' }], distractors: ['스스로 숨을 쉬는 생명체이다', '하늘에 떠 있는 구름이다', '액체 상태로 흘러내리는 물이다'] },
+            { id: 'c18', targets: ['돋보기', '오목렌즈'], slots: [{ id: 'common1', answer: '투명한 유리나 플라스틱 재질이다' }, { id: 'common2', answer: '빛을 통과시키는 렌즈 종류이다' }, { id: 'diffA', answer: '가운데가 두껍고 크게 보인다' }, { id: 'diffB', answer: '가운데가 얇고 작게 보인다' }], distractors: ['빛을 흡수해 어둡게 만든다', '스스로 빛을 내는 전등이다', '거울처럼 빛을 반사만 시킨다'] }
           ]
         };
 
@@ -112,13 +123,11 @@
           const [view, setView] = useState('home'); 
           const [type, setType] = useState(null);
           const [currentQuiz, setCurrentQuiz] = useState(null);
-          
-          // 이미 푼 문제를 기록하는 상태
           const [playedQuizzes, setPlayedQuizzes] = useState({ enumeration: [], comparison: [] });
           
           const [bank, setBank] = useState([]);
-          const [selectedSlot, setSelectedSlot] = useState(null); // 꼬치 게임용 (자동 선택)
-          const [selectedWord, setSelectedWord] = useState(null); // 샤브샤브 게임용 (재료 픽업)
+          const [selectedSlot, setSelectedSlot] = useState(null); 
+          const [selectedWord, setSelectedWord] = useState(null); 
           const [answers, setAnswers] = useState({});
           const [feedback, setFeedback] = useState({});
 
@@ -134,7 +143,6 @@
 
           const currentPointColor = type === 'enumeration' ? PINK_COLOR : BLUE_COLOR;
 
-          // --- 8-bit 오디오 엔진 ---
           const play8BitSound = (soundType) => {
             try {
               if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -183,11 +191,8 @@
             play8BitSound('startGame');
             const questions = QUIZ_DATA[quizType];
             let played = playedQuizzes[quizType];
-            
-            // 이미 푼 문제는 필터링
             let availableQuestions = questions.filter(q => !played.includes(q.id));
             
-            // 모든 문제를 다 풀었으면 기록 초기화
             if (availableQuestions.length === 0) {
               availableQuestions = questions;
               played = [];
@@ -197,14 +202,12 @@
             const options = [...quiz.slots.map(s => s.answer), ...quiz.distractors].sort(() => Math.random() - 0.5);
             
             setPlayedQuizzes(prev => ({ ...prev, [quizType]: [...played, quiz.id] }));
-            
             setType(quizType); 
             setCurrentQuiz(quiz); 
             setBank(options); 
             setAnswers({}); 
             setFeedback({}); 
             setSelectedWord(null);
-            // 꼬치 게임일 경우 첫 번째 빈칸 자동 선택, 샤브샤브는 선택 안 함
             setSelectedSlot(quizType === 'enumeration' ? quiz.slots[0].id : null); 
             setView('quiz');
           };
@@ -213,13 +216,11 @@
             if (feedback[slotId] === 'correct') return;
 
             if (type === 'enumeration') {
-                // 꼬치 게임: 수동으로 빈칸을 변경하고 싶을 때
                 play8BitSound('selectSlot'); 
                 setSelectedSlot(slotId);
             } else {
-                // 샤브샤브 게임: 재료를 고르고 난 뒤 빈칸을 눌렀을 때
                 if (!selectedWord) {
-                    play8BitSound('selectSlot'); // 단어를 먼저 고르지 않은 경우 소리만 재생
+                    play8BitSound('selectSlot');
                     return;
                 }
 
@@ -236,34 +237,32 @@
                     const newAnswers = { ...answers, [slotId]: selectedWord };
                     setAnswers(newAnswers); 
                     setFeedback(prev => ({ ...prev, [slotId]: 'correct' })); 
-                    setSelectedWord(null); // 선택 초기화
+                    setSelectedWord(null); 
                     
                     if (Object.keys(newAnswers).length === currentQuiz.slots.length) setTimeout(() => setView('success'), 1000);
                 } else {
                     play8BitSound('wrong'); 
                     setFeedback(prev => ({ ...prev, [slotId]: 'wrong' }));
-                    setSelectedWord(null); // 틀려도 다시 재료를 줍도록 초기화
-                    setTimeout(() => setFeedback(prev => ({ ...prev, [slotId]: null })), 800);
+                    setSelectedWord(null); 
+                    setTimeout(() => {
+                      setFeedback(prev => prev[slotId] === 'wrong' ? { ...prev, [slotId]: null } : prev);
+                    }, 800);
                 }
             }
           };
 
           const handleWordSelect = (word) => {
             const targetWord = word.trim();
-            const isAlreadyUsed = Object.values(answers).some(a => a.trim() === targetWord);
-            if (isAlreadyUsed) return;
+            if (Object.values(answers).some(a => a.trim() === targetWord)) return;
 
             play8BitSound('selectOption');
 
             if (type === 'comparison') {
-                // 샤브샤브 게임: 재료 픽업
                 setSelectedWord(targetWord);
                 return;
             }
 
-            // 꼬치 게임: 바로 정답 확인 (자동으로 선택된 빈칸 기준)
             if (!selectedSlot) return; 
-            
             let isCorrect = currentQuiz.slots.map(s => s.answer.trim()).includes(targetWord);
 
             if (isCorrect) {
@@ -272,7 +271,6 @@
               setAnswers(newAnswers); 
               setFeedback(prev => ({ ...prev, [selectedSlot]: 'correct' })); 
               
-              // 정답을 맞추면 다음 빈칸 자동 탐색 후 선택
               const nextSlot = currentQuiz.slots.find(s => !newAnswers[s.id]);
               setSelectedSlot(nextSlot ? nextSlot.id : null);
 
@@ -280,21 +278,18 @@
             } else {
               play8BitSound('wrong'); 
               setFeedback(prev => ({ ...prev, [selectedSlot]: 'wrong' }));
-              setTimeout(() => setFeedback(prev => ({ ...prev, [selectedSlot]: null })), 800);
+              const wrongSlot = selectedSlot; 
+              setTimeout(() => {
+                setFeedback(prev => prev[wrongSlot] === 'wrong' ? { ...prev, [wrongSlot]: null } : prev);
+              }, 800);
             }
           };
 
           const getSlotStyle = (slotId) => {
-            if (feedback[slotId] === 'correct') return 'border-green-600 bg-white/95 shadow-inner';
-            if (feedback[slotId] === 'wrong') return 'border-red-600 bg-red-50/90 animate-shake';
-            if (selectedSlot === slotId) return 'border-4 bg-white/95 shadow-2xl z-50 scale-105'; // 꼬치 게임 활성화 효과
-            return 'border-black bg-white/75 backdrop-blur-sm hover:bg-white/95';
-          };
-          
-          const getSlotBorder = (slotId) => {
-            if (feedback[slotId] === 'correct') return '#16A34A';
-            if (feedback[slotId] === 'wrong') return '#DC2626';
-            return selectedSlot === slotId ? currentPointColor : '#000000';
+            if (feedback[slotId] === 'correct') return 'bg-white/95 shadow-inner';
+            if (feedback[slotId] === 'wrong') return 'bg-red-50/90 animate-shake';
+            if (selectedSlot === slotId) return 'bg-white/95 shadow-2xl z-50 scale-105'; 
+            return 'bg-white/75 backdrop-blur-sm hover:bg-white/95';
           };
 
           return (
@@ -342,34 +337,67 @@
               {view === 'quiz' && currentQuiz && (
                 <div className="flex-1 w-full max-w-[1200px] px-2 sm:px-6 py-4 flex flex-col items-center">
                   
-                  <div className="w-full max-w-[900px] flex flex-col sm:flex-row items-center justify-between gap-2 mb-4 z-[60]">
-                    <div className="flex items-center gap-2 bg-white border-2 border-slate-900 py-1.5 px-3 sm:px-5 text-sm font-bold shadow-sm">
-                      {/* UX 변경에 따라 안내 문구를 직관적으로 수정 */}
-                      <span className="animate-bounce">👉</span> {type === 'enumeration' ? '바구니에서 알맞은 재료를 바로 누르세요!' : '재료를 먼저 고른 후, 들어갈 빈칸을 누르세요!'}
+                  <div className="w-full max-w-[900px] flex flex-col sm:flex-row items-stretch justify-between gap-2 mb-4 z-[60]">
+                    <div className="flex-1 flex items-center justify-center gap-2 bg-white border-2 border-slate-900 px-4 py-1.5 shadow-sm font-bold responsive-text-base text-center break-keep text-slate-900">
+                      <span className="animate-bounce">👉</span> {type === 'enumeration' ? '바구니에서 알맞은 재료를 바로 누르세요!' : '재료를 먼저 고른 후, 들어갈 재료칸을 누르세요!'}
                     </div>
-                    <div className="border-2 border-slate-900 px-4 py-1.5 flex items-center gap-2 text-white shadow-sm font-bold responsive-text-base text-center break-keep" style={{ backgroundColor: currentPointColor }}>
+                    <div className="flex-1 border-2 border-slate-900 px-4 py-1.5 flex items-center justify-center gap-2 text-white shadow-sm font-bold responsive-text-base text-center break-keep" style={{ backgroundColor: currentPointColor }}>
                       <span>🔥</span> 
-                      주문: {type === 'enumeration' ? (currentQuiz ? currentQuiz.topic : '') : `${currentQuiz && currentQuiz.targets ? currentQuiz.targets[0] : ''}${getWaGwa(currentQuiz && currentQuiz.targets ? currentQuiz.targets[0] : '')} ${currentQuiz && currentQuiz.targets ? currentQuiz.targets[1] : ''} 비교`}
+                      주문: {type === 'enumeration' ? currentQuiz.topic : `${currentQuiz.targets[0]}${getWaGwa(currentQuiz.targets[0])} ${currentQuiz.targets[1]} 비교`}
                     </div>
                   </div>
 
-                  <div className="w-full border-2 border-slate-900 rounded-xl overflow-hidden shadow-sm relative" style={{ maxWidth: '900px', backgroundColor: '#f8fafc' }}>
+                  <div className="w-full max-w-[900px] bg-white p-3 sm:p-5 border-2 border-slate-900 mb-4 shadow-sm relative">
+                    <div className="absolute top-0 left-0 w-full h-1 border-b border-slate-900" style={{ backgroundColor: currentPointColor }}></div>
+                    <div className="flex items-center gap-2 mb-3 relative z-10 font-bold">
+                      <span className="text-xl sm:text-2xl">🧺</span>
+                      <span className="text-[12px] sm:text-[14px] uppercase tracking-tighter text-slate-700">신선한 재료 바구니</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 justify-center py-1 relative z-10">
+                      {bank.map((word, i) => {
+                        const isUsed = Object.values(answers).includes(word);
+                        const isSelectedWord = selectedWord === word; 
+                        
+                        return (
+                          <button key={i} onClick={() => handleWordSelect(word)} disabled={isUsed} 
+                            className={`px-3 py-1.5 sm:px-4 sm:py-2 text-[13px] sm:text-[15px] transition-all border-2 font-bold rounded shadow-sm
+                            ${isUsed ? 'opacity-0 scale-50 pointer-events-none absolute' : 
+                              isSelectedWord ? 'bg-slate-100 scale-105 -translate-y-1' : 'bg-white hover:bg-slate-50 active:scale-95 hover:-translate-y-0.5'}`} 
+                            style={{ 
+                                borderColor: isUsed ? 'transparent' : isSelectedWord ? currentPointColor : '#111111',
+                                borderWidth: isSelectedWord ? '3px' : '2px'
+                            }}
+                            onMouseOver={(e) => { if(!isUsed && !isSelectedWord) e.currentTarget.style.borderColor = currentPointColor; }} 
+                            onMouseOut={(e) => { if(!isUsed && !isSelectedWord) e.currentTarget.style.borderColor = '#111111'; }}>
+                            {word}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="w-full border-2 border-slate-900 rounded-xl overflow-hidden shadow-sm relative" style={{ maxWidth: '900px', backgroundColor: '#FFFFFF' }}>
                     
                     <div className="absolute top-[2%] sm:top-[3%] left-1/2 -translate-x-1/2 px-6 sm:px-10 py-1.5 sm:py-2.5 border-2 text-white text-title font-bold rounded-full shadow-md z-[60] whitespace-nowrap" style={{ backgroundColor: SKEWER_BROWN, borderColor: SKEWER_BROWN }}>
-                      {type === 'enumeration' ? (currentQuiz ? currentQuiz.topic : '') : `${currentQuiz && currentQuiz.targets ? currentQuiz.targets[0] : ''} vs ${currentQuiz && currentQuiz.targets ? currentQuiz.targets[1] : ''}`}
+                      {type === 'enumeration' ? currentQuiz.topic : `${currentQuiz.targets[0]} vs ${currentQuiz.targets[1]}`}
                     </div>
 
                     <div className="game-board">
                       {type === 'enumeration' ? (
                         <React.Fragment>
                           <img src={SKEWER_IMG} alt="Skewer" className="game-bg bg-skewer" />
-                          <div className="absolute top-[46%] left-0 w-full flex justify-center gap-[2%] z-50 px-2">
+                          <div className="absolute top-[40%] left-0 w-full h-[24%] flex justify-center gap-[3%] z-50 px-2">
                             {currentQuiz.slots.map((slot) => (
                               <button key={slot.id} onClick={() => handleSlotClick(slot.id)} 
-                                className={`slot-btn skewer-slot rounded-xl relative ${getSlotStyle(slot.id)}`} 
-                                style={{ borderColor: getSlotBorder(slot.id) }}>
-                                <span className={`absolute top-1 sm:top-1.5 text-sm sm:text-xl font-bold text-green-600 leading-none transition-opacity duration-200 ${feedback[slot.id] === 'correct' ? 'opacity-100' : 'opacity-0'}`}>⭐</span>
-                                <span className="text-slot font-bold px-1 break-keep z-10" style={{ color: SKEWER_BROWN }}>{answers[slot.id] || "빈 칸"}</span>
+                                className={`slot-btn skewer-slot rounded-2xl relative ${getSlotStyle(slot.id)}`} 
+                                style={{ 
+                                  borderColor: feedback[slot.id] === 'correct' ? currentPointColor : (feedback[slot.id] === 'wrong' ? '#DC2626' : (selectedSlot === slot.id ? currentPointColor : '#111111')), 
+                                  borderWidth: (feedback[slot.id] === 'correct' || selectedSlot === slot.id) ? '3px' : '2px',
+                                  borderStyle: 'solid'
+                                }}>
+                                <span className="text-slot font-bold px-1 break-keep z-10" style={{ color: answers[slot.id] ? currentPointColor : SKEWER_BROWN }}>
+                                  {answers[slot.id] || "재료칸"}
+                                </span>
                               </button>
                             ))}
                           </div>
@@ -384,62 +412,50 @@
                               {['common1', 'common2'].map(sid => (
                                 <button key={sid} onClick={() => handleSlotClick(sid)} 
                                   className={`slot-btn w-full aspect-[5/2] rounded-lg sm:rounded-xl ${getSlotStyle(sid)}`}
-                                  style={{ borderColor: getSlotBorder(sid) }}>
-                                  <span className="text-slot font-bold px-1" style={{ color: SKEWER_BROWN }}>{answers[sid] || "빈 칸"}</span>
+                                  style={{ 
+                                    borderColor: feedback[sid] === 'correct' ? currentPointColor : (feedback[sid] === 'wrong' ? '#DC2626' : (selectedSlot === sid ? currentPointColor : '#111111')), 
+                                    borderWidth: (feedback[sid] === 'correct' || selectedSlot === sid) ? '3px' : '2px',
+                                    borderStyle: 'solid'
+                                   }}>
+                                  <span className="text-slot font-bold px-1" style={{ color: answers[sid] ? currentPointColor : SKEWER_BROWN }}>
+                                    {answers[sid] || "재료칸"}
+                                  </span>
                                 </button>
                               ))}
                             </div>
                           </div>
 
                           <div className="absolute top-[35%] left-[16%] w-[20%] flex flex-col items-center z-50">
-                            <div className="px-4 py-0.5 sm:py-1 border-2 border-black text-white text-label font-bold rounded-full shadow-sm bg-blue-500 mb-[6%] whitespace-nowrap">{currentQuiz && currentQuiz.targets ? currentQuiz.targets[0] : ''}</div>
+                            <div className="px-4 py-0.5 sm:py-1 border-2 border-black text-white text-label font-bold rounded-full shadow-sm bg-blue-500 mb-[6%] whitespace-nowrap">{currentQuiz.targets[0]}</div>
                             <button onClick={() => handleSlotClick('diffA')} 
                               className={`slot-btn w-full aspect-[4/3] rounded-lg sm:rounded-xl ${getSlotStyle('diffA')}`}
-                              style={{ borderColor: getSlotBorder('diffA') }}>
-                              <span className="text-slot font-bold px-1" style={{ color: SKEWER_BROWN }}>{answers['diffA'] || "빈 칸"}</span>
+                              style={{ 
+                                borderColor: feedback['diffA'] === 'correct' ? currentPointColor : (feedback['diffA'] === 'wrong' ? '#DC2626' : (selectedSlot === 'diffA' ? currentPointColor : '#111111')), 
+                                borderWidth: (feedback['diffA'] === 'correct' || selectedSlot === 'diffA') ? '3px' : '2px',
+                                borderStyle: 'solid'
+                              }}>
+                              <span className="text-slot font-bold px-1" style={{ color: answers['diffA'] ? currentPointColor : SKEWER_BROWN }}>
+                                {answers['diffA'] || "재료칸"}
+                              </span>
                             </button>
                           </div>
 
                           <div className="absolute top-[35%] right-[16%] w-[20%] flex flex-col items-center z-50">
-                            <div className="px-4 py-0.5 sm:py-1 border-2 border-black text-white text-label font-bold rounded-full shadow-sm bg-blue-500 mb-[6%] whitespace-nowrap">{currentQuiz && currentQuiz.targets ? currentQuiz.targets[1] : ''}</div>
+                            <div className="px-4 py-0.5 sm:py-1 border-2 border-black text-white text-label font-bold rounded-full shadow-sm bg-blue-500 mb-[6%] whitespace-nowrap">{currentQuiz.targets[1]}</div>
                             <button onClick={() => handleSlotClick('diffB')} 
                               className={`slot-btn w-full aspect-[4/3] rounded-lg sm:rounded-xl ${getSlotStyle('diffB')}`}
-                              style={{ borderColor: getSlotBorder('diffB') }}>
-                              <span className="text-slot font-bold px-1" style={{ color: SKEWER_BROWN }}>{answers['diffB'] || "빈 칸"}</span>
+                              style={{ 
+                                borderColor: feedback['diffB'] === 'correct' ? currentPointColor : (feedback['diffB'] === 'wrong' ? '#DC2626' : (selectedSlot === 'diffB' ? currentPointColor : '#111111')), 
+                                borderWidth: (feedback['diffB'] === 'correct' || selectedSlot === 'diffB') ? '3px' : '2px',
+                                borderStyle: 'solid'
+                              }}>
+                              <span className="text-slot font-bold px-1" style={{ color: answers['diffB'] ? currentPointColor : SKEWER_BROWN }}>
+                                {answers['diffB'] || "재료칸"}
+                              </span>
                             </button>
                           </div>
                         </React.Fragment>
                       )}
-                    </div>
-                  </div>
-
-                  <div className="w-full max-w-[900px] bg-white p-3 sm:p-5 border-2 border-slate-900 mt-4 shadow-sm relative">
-                    <div className="absolute top-0 left-0 w-full h-1 border-b border-slate-900" style={{ backgroundColor: currentPointColor }}></div>
-                    <div className="flex items-center gap-2 mb-3 relative z-10 font-bold">
-                      <span className="text-xl sm:text-2xl">🧺</span>
-                      <span className="text-[12px] sm:text-[14px] uppercase tracking-tighter text-slate-700">신선한 재료 바구니</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2 justify-center py-1 relative z-10">
-                      {bank.map((word, i) => {
-                        const isUsed = Object.values(answers).includes(word);
-                        const isSelectedWord = selectedWord === word; // 샤브샤브 게임에서 선택된 단어인지 확인
-                        
-                        return (
-                          <button key={i} onClick={() => handleWordSelect(word)} disabled={isUsed} 
-                            // 선택된 단어일 경우 시각적으로 눈에 띄게 (크기 증가 및 배경색 변경) 스타일 수정
-                            className={`px-3 py-1.5 sm:px-4 sm:py-2 text-[13px] sm:text-[15px] transition-all border-2 font-bold rounded shadow-sm
-                            ${isUsed ? 'opacity-0 scale-50 pointer-events-none absolute' : 
-                              isSelectedWord ? 'bg-slate-100 scale-105 -translate-y-1' : 'bg-white hover:bg-slate-50 active:scale-95 hover:-translate-y-0.5'}`} 
-                            style={{ 
-                                borderColor: isUsed ? 'transparent' : isSelectedWord ? currentPointColor : '#111111',
-                                borderWidth: isSelectedWord ? '3px' : '2px'
-                            }}
-                            onMouseOver={(e) => { if(!isUsed && !isSelectedWord) e.currentTarget.style.borderColor = currentPointColor; }} 
-                            onMouseOut={(e) => { if(!isUsed && !isSelectedWord) e.currentTarget.style.borderColor = '#111111'; }}>
-                            {word}
-                          </button>
-                        );
-                      })}
                     </div>
                   </div>
 
